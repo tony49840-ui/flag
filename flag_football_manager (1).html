@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flag Football Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --navy: #1A2B4A; --red: #C0392B; --gold: #F39C12; --light: #EAF0FB;
+    --white: #FFFFFF; --gray: #95A5A6; --lgray: #F2F4F7; --green: #27AE60;
+    --orange: #E67E22; --darkgray: #2C3E50; --accent: #2980B9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #0d1b2e; color: #e8edf5; min-height: 100vh; }
+
+  .banner {
+    background: linear-gradient(135deg, #1A2B4A 0%, #0d1b2e 60%, #1A2B4A 100%);
+    padding: 2rem 2.5rem 1.5rem; border-bottom: 3px solid var(--gold);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .banner-left { display: flex; align-items: center; gap: 1.2rem; }
+  .banner-icon { font-size: 3rem; }
+  .banner-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; letter-spacing: 2px; color: #fff; line-height: 1; }
+  .banner-sub { font-size: 0.82rem; color: #A8C4E0; letter-spacing: 1px; margin-top: 2px; }
+  .export-btn {
+    background: var(--gold); color: #1A2B4A; border: none; padding: 0.75rem 1.5rem;
+    border-radius: 8px; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem;
+    letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .export-btn:hover { background: #f0a500; transform: translateY(-1px); }
+
+  .kpi-bar { display: flex; gap: 1px; background: #0d1b2e; border-bottom: 1px solid #243654; }
+  .kpi { flex: 1; background: #1e2f4a; padding: 1rem 1.5rem; text-align: center; }
+  .kpi-label { font-size: 0.7rem; letter-spacing: 1.5px; color: #A8C4E0; text-transform: uppercase; }
+  .kpi-value { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; line-height: 1.1; }
+  .kpi-sub { font-size: 0.7rem; color: #A8C4E0; }
+
+  .tabs { display: flex; gap: 0; background: #111d31; border-bottom: 1px solid #243654; overflow-x: auto; }
+  .tab {
+    padding: 0.85rem 1.4rem; font-size: 0.82rem; font-weight: 500; cursor: pointer;
+    border-bottom: 3px solid transparent; white-space: nowrap; color: #7a90b0;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab:hover { color: #A8C4E0; }
+  .tab.active { color: #fff; border-bottom-color: var(--gold); }
+
+  .content { padding: 1.5rem 2rem; }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px;
+    color: var(--gold); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #243654; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  thead tr { background: var(--navy); }
+  thead th { padding: 0.75rem 0.8rem; text-align: center; color: #A8C4E0; font-weight: 500; letter-spacing: 0.5px; font-size: 0.75rem; white-space: nowrap; border-right: 1px solid #243654; }
+  thead th:last-child { border-right: none; }
+  tbody tr { border-bottom: 1px solid #1e2f4a; transition: background 0.15s; }
+  tbody tr:hover { background: #1e2f4a; }
+  tbody tr:nth-child(even) { background: #16253d; }
+  tbody tr:nth-child(even):hover { background: #1e2f4a; }
+  tbody td { padding: 0.6rem 0.8rem; text-align: center; border-right: 1px solid #1a2a3e; }
+  tbody td:last-child { border-right: none; }
+  .td-left { text-align: left !important; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; }
+  .badge-green { background: #1a4d2e; color: #4ade80; }
+  .badge-red { background: #4d1a1a; color: #f87171; }
+  .badge-orange { background: #4d3311; color: #fb923c; }
+  .badge-blue { background: #1a3454; color: #60a5fa; }
+  .badge-gray { background: #2a2a2a; color: #9ca3af; }
+  .badge-purple { background: #3d1a5c; color: #c084fc; }
+
+  .presence-cell { cursor: pointer; user-select: none; font-size: 1rem; transition: transform 0.1s; }
+  .presence-cell:hover { transform: scale(1.3); }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-group label { font-size: 0.72rem; letter-spacing: 1px; color: #A8C4E0; text-transform: uppercase; }
+  .form-group input, .form-group select, .form-group textarea {
+    background: #1e2f4a; border: 1px solid #243654; color: #e8edf5; padding: 0.5rem 0.75rem;
+    border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── TERRAIN COMPOSITION ── */
+  .terrain {
+    background: linear-gradient(180deg, #1a5c2a 0%, #1e6830 40%, #1a5c2a 100%);
+    border-radius: 12px; padding: 1.5rem; position: relative;
+    border: 3px solid #2d7a3f; margin-bottom: 1.5rem;
+    /* Field lines */
+    background-image: repeating-linear-gradient(
+      0deg, transparent, transparent 49px, rgba(255,255,255,0.08) 49px, rgba(255,255,255,0.08) 50px
+    );
+  }
+  .terrain-side { display: flex; flex-direction: column; gap: 6px; }
+  .endzone {
+    background: #8B0000; border-radius: 6px; padding: 0.4rem; text-align: center;
+    font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; font-size: 0.85rem; color: #ffaaaa;
+    margin-bottom: 6px;
+  }
+  .endzone.blue { background: #00008B; color: #aaaaff; margin-bottom: 0; margin-top: 6px; }
+  .field-row { display: flex; justify-content: center; align-items: center; padding: 4px 0; gap: 10px; }
+  .field-row.offense-line { justify-content: center; gap: 10px; }
+
+  .player-slot {
+    position: relative; min-width: 85px; text-align: center;
+  }
+  .player-token {
+    background: var(--accent); border-radius: 8px; padding: 0.45rem 0.6rem; text-align: center;
+    border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  .player-token:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .player-token.gold { background: #7a5200; border-color: var(--gold); }
+  .player-token.green { background: #1a4d2e; border-color: var(--green); }
+  .player-token.red { background: #7a1a1a; border-color: #ef4444; }
+  .player-token.purple { background: #3d1a5c; border-color: #a855f7; }
+  .player-token.deep-purple { background: #2d1a5c; border-color: #a855f7; }
+  .player-token .pnum { font-size: 0.65rem; color: rgba(255,255,255,0.6); }
+  .player-token .pname { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-token .ppos { font-size: 0.65rem; color: rgba(255,255,255,0.7); }
+  .midline { border-top: 2px dashed rgba(255,255,255,0.3); margin: 6px 0; position: relative; }
+  .midline::after { content: 'LIGNE DE MÊLÉE'; position: absolute; left: 50%; transform: translateX(-50%); top: -9px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); font-size: 0.6rem; padding: 0 6px; border-radius: 3px; white-space: nowrap; }
+  .side-label { font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; font-size: 0.9rem; color: rgba(255,255,255,0.4); text-align: center; margin: 3px 0; }
+
+  .stat-input {
+    background: #1e2f4a; border: 1px solid #243654; color: #e8edf5; padding: 0.3rem 0.5rem;
+    border-radius: 4px; width: 60px; text-align: center; font-size: 0.82rem;
+  }
+  .stat-input:focus { outline: none; border-color: var(--gold); }
+
+  /* ── BOUTONS ADD ── */
+  .add-btn {
+    background: var(--green); color: #fff; border: none; padding: 0.6rem 1.2rem;
+    border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;
+    margin-bottom: 1rem;
+  }
+  .add-btn:hover { background: #219a52; transform: translateY(-1px); }
+  .del-btn {
+    background: none; border: 1px solid #4d1a1a; color: #f87171; padding: 0.2rem 0.5rem;
+    border-radius: 4px; cursor: pointer; font-size: 0.75rem; transition: all 0.15s;
+  }
+  .del-btn:hover { background: #4d1a1a; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1A2B4A; border: 1px solid #243654; border-radius: 12px;
+    padding: 1.5rem; min-width: 340px; max-width: 520px; width: 90%; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; color: var(--gold); margin-bottom: 1rem; letter-spacing: 2px; }
+  .modal-btns { display: flex; gap: 0.75rem; margin-top: 1.2rem; justify-content: flex-end; }
+  .btn-primary { background: var(--gold); color: #1A2B4A; border: none; padding: 0.5rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+  .btn-secondary { background: none; border: 1px solid #243654; color: #A8C4E0; padding: 0.5rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+  .btn-danger { background: none; border: 1px solid var(--red); color: #f87171; padding: 0.5rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+
+  /* Poste dual selector */
+  .poste-selector { display: flex; flex-direction: column; gap: 0.5rem; }
+  .poste-side { background: #16253d; border-radius: 6px; padding: 0.5rem; }
+  .poste-side label { font-size: 0.7rem; color: #A8C4E0; letter-spacing: 1px; margin-bottom: 0.3rem; display: block; }
+  .poste-pills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .poste-pill {
+    padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; cursor: pointer;
+    border: 1px solid #243654; background: #1e2f4a; color: #7a90b0; transition: all 0.15s;
+  }
+  .poste-pill.selected-off { background: #7a5200; border-color: var(--gold); color: #fbbf24; }
+  .poste-pill.selected-def { background: #3d1a5c; border-color: #a855f7; color: #c084fc; }
+
+  /* Comp history */
+  .history-card {
+    background: #1e2f4a; border: 1px solid #243654; border-radius: 8px; padding: 0.8rem 1rem;
+    margin-bottom: 0.6rem; cursor: pointer; transition: border-color 0.15s;
+  }
+  .history-card:hover { border-color: var(--gold); }
+  .history-card-title { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; color: var(--gold); letter-spacing: 1px; }
+  .history-card-sub { font-size: 0.75rem; color: #7a90b0; }
+
+  /* Blessure historique */
+  .inj-card {
+    background: #1e2f4a; border-left: 3px solid var(--red); border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 0.6rem;
+  }
+  .inj-card.resolved { border-left-color: var(--green); }
+  .inj-header { display: flex; justify-content: space-between; align-items: center; }
+  .inj-player { font-weight: 600; font-size: 0.9rem; }
+  .inj-type { font-size: 0.8rem; color: #A8C4E0; }
+  .inj-dates { font-size: 0.72rem; color: #7a90b0; margin-top: 0.2rem; }
+  .inj-duration { font-size: 0.8rem; color: var(--gold); margin-top: 0.2rem; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media(max-width:600px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <div class="banner-left">
+    <div class="banner-icon">🏈</div>
+    <div>
+      <div class="banner-title">Gestion Équipe Flag Football</div>
+      <div class="banner-sub" id="banner-sub">Saison 2025 &nbsp;•&nbsp; Format 5 vs 5</div>
+    </div>
+  </div>
+  <button class="export-btn" onclick="exportExcel()">⬇ Exporter Excel</button>
+</div>
+
+<div class="kpi-bar">
+  <div class="kpi"><div class="kpi-label">Effectif</div><div class="kpi-value" id="kpi-total" style="color:#60a5fa">0</div><div class="kpi-sub">joueurs</div></div>
+  <div class="kpi"><div class="kpi-label">Aptes</div><div class="kpi-value" id="kpi-aptes" style="color:#4ade80">0</div><div class="kpi-sub">disponibles</div></div>
+  <div class="kpi"><div class="kpi-label">Blessés</div><div class="kpi-value" id="kpi-blesses" style="color:#f87171">0</div><div class="kpi-sub">indisponibles</div></div>
+  <div class="kpi"><div class="kpi-label">Entraînements</div><div class="kpi-value" id="kpi-entr" style="color:var(--gold)">0</div><div class="kpi-sub">sessions</div></div>
+  <div class="kpi"><div class="kpi-label">Matchs</div><div class="kpi-value" id="kpi-matchs-count" style="color:#c084fc">0</div><div class="kpi-sub">joués</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('joueurs',this)">📋 Joueurs</div>
+  <div class="tab" onclick="switchTab('entrainements',this)">🏃 Entraînements</div>
+  <div class="tab" onclick="switchTab('matchs',this)">🏆 Matchs</div>
+  <div class="tab" onclick="switchTab('video',this)">🎥 Analyse Vidéo</div>
+  <div class="tab" onclick="switchTab('composition',this)">📐 Composition</div>
+  <div class="tab" onclick="switchTab('historique',this)">🩹 Historique Blessures</div>
+</div>
+
+<div class="content">
+
+  <!-- ═══════ JOUEURS ═══════ -->
+  <div id="panel-joueurs" class="panel active">
+    <div class="section-title">📋 Roster & Blessures</div>
+    <button class="add-btn" onclick="openAddPlayerModal()">➕ Ajouter un joueur</button>
+    <div class="tbl-wrap">
+      <table id="tbl-joueurs">
+        <thead>
+          <tr>
+            <th>#</th><th>Nom</th><th>Poste OFF</th><th>Poste DEF</th>
+            <th>Forme (1-10)</th><th>Statut</th><th>Blessure</th><th>Zone corps</th>
+            <th>Date blessure</th><th>Retour estimé</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-joueurs"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ ENTRAÎNEMENTS ═══════ -->
+  <div id="panel-entrainements" class="panel">
+    <div class="section-title">🏃 Présence aux Entraînements</div>
+    <button class="add-btn" onclick="openAddTrainingModal()">➕ Ajouter un entraînement</button>
+    <div class="tbl-wrap">
+      <table id="tbl-entr">
+        <thead id="thead-entr"></thead>
+        <tbody id="tbody-entr"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ MATCHS ═══════ -->
+  <div id="panel-matchs" class="panel">
+    <div class="section-title">🏆 Présence & Stats Matchs</div>
+    <button class="add-btn" onclick="openAddMatchModal()">➕ Ajouter un match</button>
+    <div class="tbl-wrap">
+      <table id="tbl-matchs">
+        <thead id="thead-matchs"></thead>
+        <tbody id="tbody-matchs"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ VIDÉO ═══════ -->
+  <div id="panel-video" class="panel">
+    <div class="section-title">🎥 Analyse Vidéo par Match</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Match</label>
+        <select id="vid-match-select" onchange="renderVideo()"></select>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Joueur</th><th>Poste OFF</th><th>Poste DEF</th><th>Note /10</th><th>TDs</th><th>Ints</th><th>Yards</th><th>Points forts</th><th>Points faibles</th></tr>
+        </thead>
+        <tbody id="tbody-video"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ COMPOSITION ═══════ -->
+  <div id="panel-composition" class="panel">
+    <div class="section-title">📐 Composition d'Équipe</div>
+
+    <div class="two-col" style="margin-bottom:1rem;">
+      <div>
+        <div class="section-title" style="font-size:1rem;margin-bottom:0.5rem;">📅 Sélectionner un match</div>
+        <select id="comp-match-select" class="stat-input" style="width:100%;font-size:0.85rem;padding:0.5rem" onchange="loadComposition()"></select>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:0.5rem;">
+        <button class="add-btn" style="margin:0" onclick="saveComposition()">💾 Sauvegarder composition</button>
+      </div>
+    </div>
+
+    <div id="comp-match-info" style="background:#16253d;border-radius:8px;padding:0.8rem 1rem;margin-bottom:1rem;font-size:0.82rem;color:#A8C4E0;display:none;">
+      <span id="comp-info-adversaire"></span> &nbsp;•&nbsp; <span id="comp-info-lieu"></span>
+    </div>
+
+    <!-- TERRAIN -->
+    <div class="terrain">
+      <div class="endzone">🔴 Zone de but adverse</div>
+      <div class="side-label" style="margin-top:4px;">⚡ ATTAQUE</div>
+
+      <!-- WR ligne -->
+      <div class="field-row offense-line" id="off-row1">
+        <div class="player-slot" id="slot-WRL"><div class="player-token" onclick="openSlotModal('WRL')"><div class="pnum" id="slot-WRL-num">#--</div><div class="pname" id="slot-WRL-name">WR Gauche</div><div class="ppos">WR</div></div></div>
+        <div class="player-slot" id="slot-QB"><div class="player-token gold" onclick="openSlotModal('QB')"><div class="pnum" id="slot-QB-num">#--</div><div class="pname" id="slot-QB-name">QB</div><div class="ppos">QB</div></div></div>
+        <div class="player-slot" id="slot-WRR"><div class="player-token" onclick="openSlotModal('WRR')"><div class="pnum" id="slot-WRR-num">#--</div><div class="pname" id="slot-WRR-name">WR Droit</div><div class="ppos">WR</div></div></div>
+      </div>
+
+      <!-- RB + Centre sur même horizontale, C aligné sous QB -->
+      <div class="field-row" style="position:relative;justify-content:center;gap:0;">
+        <!-- RB à gauche -->
+        <div style="flex:1;display:flex;justify-content:flex-start;padding-left:10px;">
+          <div class="player-slot"><div class="player-token green" onclick="openSlotModal('RB')"><div class="pnum" id="slot-RB-num">#--</div><div class="pname" id="slot-RB-name">RB</div><div class="ppos">RB</div></div></div>
+        </div>
+        <!-- Centre centré sous QB -->
+        <div style="flex:0;display:flex;justify-content:center;">
+          <div class="player-slot"><div class="player-token red" onclick="openSlotModal('C')"><div class="pnum" id="slot-C-num">#--</div><div class="pname" id="slot-C-name">Centre</div><div class="ppos">C</div></div></div>
+        </div>
+        <!-- Espace droit vide pour équilibrer -->
+        <div style="flex:1;"></div>
+      </div>
+
+      <div class="midline"></div>
+
+      <!-- DÉFENSE -->
+      <div class="side-label">🛡️ DÉFENSE</div>
+      <div class="field-row">
+        <div class="player-slot"><div class="player-token purple" onclick="openSlotModal('DBL')"><div class="pnum" id="slot-DBL-num">#--</div><div class="pname" id="slot-DBL-name">DB Gauche</div><div class="ppos">DB</div></div></div>
+        <div class="player-slot"><div class="player-token purple" onclick="openSlotModal('LB')"><div class="pnum" id="slot-LB-num">#--</div><div class="pname" id="slot-LB-name">LB</div><div class="ppos">LB</div></div></div>
+        <div class="player-slot"><div class="player-token purple" onclick="openSlotModal('DBR')"><div class="pnum" id="slot-DBR-num">#--</div><div class="pname" id="slot-DBR-name">DB Droit</div><div class="ppos">DB</div></div></div>
+      </div>
+      <div class="field-row">
+        <div class="player-slot"><div class="player-token deep-purple" onclick="openSlotModal('SFL')"><div class="pnum" id="slot-SFL-num">#--</div><div class="pname" id="slot-SFL-name">Safety G</div><div class="ppos">S</div></div></div>
+        <div class="player-slot"><div class="player-token deep-purple" onclick="openSlotModal('SFR')"><div class="pnum" id="slot-SFR-num">#--</div><div class="pname" id="slot-SFR-name">Safety D</div><div class="ppos">S</div></div></div>
+      </div>
+
+      <div class="endzone blue">🔵 Notre zone de but</div>
+    </div>
+
+    <!-- Historique compositions -->
+    <div class="section-title" style="margin-top:1.5rem;">🕐 Historique des compositions</div>
+    <div id="comp-history-list"></div>
+
+    <div class="section-title" style="margin-top:1rem">📋 Roster du match</div>
+    <div class="tbl-wrap">
+      <table id="tbl-roster">
+        <thead><tr><th>#</th><th>Joueur</th><th>Poste OFF</th><th>Poste DEF</th><th>Sélection</th><th>Notes</th></tr></thead>
+        <tbody id="tbody-roster"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ HISTORIQUE BLESSURES ═══════ -->
+  <div id="panel-historique" class="panel">
+    <div class="section-title">🩹 Historique des Blessures</div>
+    <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+      <button class="add-btn" style="margin:0" onclick="openAddInjuryModal()">➕ Ajouter une blessure</button>
+      <div class="form-group" style="min-width:160px;margin:0">
+        <select id="inj-filter-player" class="stat-input" style="width:100%" onchange="renderHistoriqueBlessures()">
+          <option value="">Tous les joueurs</option>
+        </select>
+      </div>
+      <div class="form-group" style="min-width:140px;margin:0">
+        <select id="inj-filter-status" class="stat-input" style="width:100%" onchange="renderHistoriqueBlessures()">
+          <option value="">Tous statuts</option>
+          <option value="active">En cours</option>
+          <option value="resolved">Résolue</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stats blessures -->
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div style="background:#1e2f4a;border-radius:8px;padding:0.8rem 1.2rem;flex:1;min-width:120px;text-align:center;">
+        <div style="font-size:0.7rem;color:#A8C4E0;text-transform:uppercase;letter-spacing:1px;">Total blessures</div>
+        <div id="inj-stat-total" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:#f87171;">0</div>
+      </div>
+      <div style="background:#1e2f4a;border-radius:8px;padding:0.8rem 1.2rem;flex:1;min-width:120px;text-align:center;">
+        <div style="font-size:0.7rem;color:#A8C4E0;text-transform:uppercase;letter-spacing:1px;">En cours</div>
+        <div id="inj-stat-active" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:#fb923c;">0</div>
+      </div>
+      <div style="background:#1e2f4a;border-radius:8px;padding:0.8rem 1.2rem;flex:1;min-width:120px;text-align:center;">
+        <div style="font-size:0.7rem;color:#A8C4E0;text-transform:uppercase;letter-spacing:1px;">Résolues</div>
+        <div id="inj-stat-resolved" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:#4ade80;">0</div>
+      </div>
+      <div style="background:#1e2f4a;border-radius:8px;padding:0.8rem 1.2rem;flex:1;min-width:120px;text-align:center;">
+        <div style="font-size:0.7rem;color:#A8C4E0;text-transform:uppercase;letter-spacing:1px;">Joueur + blessé</div>
+        <div id="inj-stat-prone" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold);">—</div>
+      </div>
+    </div>
+
+    <div id="inj-list"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- Modal: Joueur -->
+<div class="modal-overlay" id="modal-player">
+  <div class="modal">
+    <h3 id="modal-player-title">Ajouter un Joueur</h3>
+    <input type="hidden" id="modal-player-idx" value="-1">
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:0.75rem;">
+      <div class="form-group">
+        <label>Numéro de maillot</label>
+        <input type="text" id="mp-num" placeholder="001">
+      </div>
+      <div class="form-group">
+        <label>Nom complet</label>
+        <input type="text" id="mp-nom" placeholder="Prénom Nom">
+      </div>
+    </div>
+    <div class="poste-selector" style="margin-bottom:0.75rem;">
+      <div class="poste-side">
+        <label>⚡ Poste Attaque (max 1)</label>
+        <div class="poste-pills" id="pills-off">
+          <span class="poste-pill" data-side="off" data-val="QB" onclick="togglePoste(this)">QB</span>
+          <span class="poste-pill" data-side="off" data-val="WR" onclick="togglePoste(this)">WR</span>
+          <span class="poste-pill" data-side="off" data-val="RB" onclick="togglePoste(this)">RB</span>
+          <span class="poste-pill" data-side="off" data-val="C" onclick="togglePoste(this)">C</span>
+          <span class="poste-pill" data-side="off" data-val="TE" onclick="togglePoste(this)">TE</span>
+          <span class="poste-pill" data-side="off" data-val="—" onclick="togglePoste(this)">—</span>
+        </div>
+      </div>
+      <div class="poste-side">
+        <label>🛡️ Poste Défense (max 1)</label>
+        <div class="poste-pills" id="pills-def">
+          <span class="poste-pill" data-side="def" data-val="LB" onclick="togglePoste(this)">LB</span>
+          <span class="poste-pill" data-side="def" data-val="DB" onclick="togglePoste(this)">DB</span>
+          <span class="poste-pill" data-side="def" data-val="S" onclick="togglePoste(this)">S</span>
+          <span class="poste-pill" data-side="def" data-val="DL" onclick="togglePoste(this)">DL</span>
+          <span class="poste-pill" data-side="def" data-val="CB" onclick="togglePoste(this)">CB</span>
+          <span class="poste-pill" data-side="def" data-val="—" onclick="togglePoste(this)">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:0.75rem;">
+      <div class="form-group">
+        <label>Statut</label>
+        <select id="mp-statut">
+          <option>Apte</option><option>En rééducation</option><option>Indispo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Forme (1-10)</label>
+        <input type="number" id="mp-forme" min="1" max="10" value="8">
+      </div>
+      <div class="form-group">
+        <label>Blessure actuelle</label>
+        <input type="text" id="mp-blessure" placeholder="Ex: Entorse cheville">
+      </div>
+      <div class="form-group">
+        <label>Zone du corps</label>
+        <input type="text" id="mp-zone" placeholder="Ex: Cheville gauche">
+      </div>
+      <div class="form-group">
+        <label>Date de blessure</label>
+        <input type="date" id="mp-date-blessure">
+      </div>
+      <div class="form-group">
+        <label>Retour estimé</label>
+        <input type="date" id="mp-retour">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-player')">Annuler</button>
+      <button class="btn-danger" id="btn-del-player" style="display:none" onclick="deletePlayer()">Supprimer</button>
+      <button class="btn-primary" onclick="savePlayer()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Entraînement -->
+<div class="modal-overlay" id="modal-training">
+  <div class="modal">
+    <h3>Ajouter un Entraînement</h3>
+    <div class="form-group" style="margin-bottom:0.75rem;">
+      <label>Date de l'entraînement</label>
+      <input type="date" id="mt-date">
+    </div>
+    <div class="form-group">
+      <label>Lieu / Remarques</label>
+      <input type="text" id="mt-lieu" placeholder="Ex: Terrain municipal">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-training')">Annuler</button>
+      <button class="btn-primary" onclick="saveTraining()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Match -->
+<div class="modal-overlay" id="modal-match">
+  <div class="modal">
+    <h3 id="modal-match-title">Ajouter un Match</h3>
+    <input type="hidden" id="modal-match-idx" value="-1">
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:0.75rem;">
+      <div class="form-group">
+        <label>Date du match</label>
+        <input type="date" id="mm-date">
+      </div>
+      <div class="form-group">
+        <label>Adversaire</label>
+        <input type="text" id="mm-adversaire" placeholder="Nom de l'équipe">
+      </div>
+      <div class="form-group">
+        <label>Lieu</label>
+        <input type="text" id="mm-lieu" placeholder="Terrain / Ville">
+      </div>
+      <div class="form-group">
+        <label>Score (nos pts)</label>
+        <input type="number" id="mm-score-nous" min="0" value="0">
+      </div>
+      <div class="form-group">
+        <label>Score (eux)</label>
+        <input type="number" id="mm-score-eux" min="0" value="0">
+      </div>
+      <div class="form-group">
+        <label>Résultat</label>
+        <select id="mm-resultat">
+          <option>Victoire</option><option>Défaite</option><option>Nul</option><option>À jouer</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-match')">Annuler</button>
+      <button class="btn-danger" id="btn-del-match" style="display:none" onclick="deleteMatch()">Supprimer</button>
+      <button class="btn-primary" onclick="saveMatch()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Assigner joueur à slot composition -->
+<div class="modal-overlay" id="modal-slot">
+  <div class="modal">
+    <h3 id="modal-slot-title">Assigner un joueur</h3>
+    <input type="hidden" id="modal-slot-key">
+    <div class="form-group" style="margin-bottom:1rem;">
+      <label>Joueur</label>
+      <select id="ms-player" style="width:100%;background:#1e2f4a;border:1px solid #243654;color:#e8edf5;padding:0.5rem;border-radius:6px;font-size:0.85rem;"></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-slot')">Annuler</button>
+      <button class="btn-primary" onclick="saveSlot()">Assigner</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Blessure historique -->
+<div class="modal-overlay" id="modal-injury">
+  <div class="modal">
+    <h3 id="modal-injury-title">Ajouter une blessure</h3>
+    <input type="hidden" id="modal-injury-idx" value="-1">
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:0.75rem;">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Joueur</label>
+        <select id="mi-player" style="background:#1e2f4a;border:1px solid #243654;color:#e8edf5;padding:0.5rem;border-radius:6px;font-size:0.85rem;"></select>
+      </div>
+      <div class="form-group">
+        <label>Type de blessure</label>
+        <input type="text" id="mi-type" placeholder="Ex: Entorse, Fracture…">
+      </div>
+      <div class="form-group">
+        <label>Zone du corps</label>
+        <input type="text" id="mi-zone" placeholder="Ex: Genou gauche">
+      </div>
+      <div class="form-group">
+        <label>Date de blessure</label>
+        <input type="date" id="mi-date-debut">
+      </div>
+      <div class="form-group">
+        <label>Date de retour</label>
+        <input type="date" id="mi-date-fin" placeholder="Si résolue">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Contexte / Notes</label>
+        <textarea id="mi-notes" rows="2" placeholder="Match? Entraînement? Circonstances…" style="resize:vertical;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select id="mi-statut">
+          <option value="active">En cours</option>
+          <option value="resolved">Résolue</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Gravité</label>
+        <select id="mi-gravite">
+          <option value="légère">Légère</option>
+          <option value="modérée">Modérée</option>
+          <option value="grave">Grave</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-injury')">Annuler</button>
+      <button class="btn-danger" id="btn-del-injury" style="display:none" onclick="deleteInjury()">Supprimer</button>
+      <button class="btn-primary" onclick="saveInjury()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// ÉTAT GLOBAL
+// ════════════════════════════════════════════════════════════
+const STATUTS = ["Apte","En rééducation","Indispo"];
+const PRESENCES = ["✅","❌","🤕","🟡"];
+const COMP_SLOTS = ["WRL","QB","WRR","RB","C","DBL","LB","DBR","SFL","SFR"];
+const SLOT_LABELS = {WRL:"WR Gauche",QB:"QB",WRR:"WR Droit",RB:"RB",C:"Centre",DBL:"DB Gauche",LB:"LB",DBR:"DB Droit",SFL:"Safety G",SFR:"Safety D"};
+
+let state = {
+  joueurs: [],        // {num, nom, posteOff, posteDef, forme, statut, blessure, zone, dateBlessure, retour}
+  trainings: [],      // {date, lieu}
+  matches: [],        // {date, adversaire, lieu, scoreNous, scoreEux, resultat}
+  entrainements: [],  // [nbJoueurs][nbTrainings]
+  matchsPresence: [], // [nbJoueurs][nbMatchs]
+  matchsStats: [],    // [nbJoueurs][nbMatchs] {td, ints, yards}
+  video: [],          // [nbJoueurs][nbMatchs] {note, td, ints, yards, forts, faibles}
+  roster: [],         // [nbJoueurs] string
+  compositions: [],   // [{matchIdx, slots:{WRL,QB,...:playerIdx}, savedAt}]
+  injuries: []        // {playerIdx, type, zone, dateDebut, dateFin, notes, statut, gravite}
+};
+
+// Données initiales (22 joueurs par défaut)
+function initDefaultPlayers() {
+  const postes = [
+    {off:"QB",def:"LB"},{off:"WR",def:"DB"},{off:"WR",def:"DB"},
+    {off:"C",def:"LB"},{off:"RB",def:"S"},{off:"QB",def:"LB"},
+    {off:"WR",def:"CB"},{off:"WR",def:"DB"},{off:"C",def:"DL"},
+    {off:"RB",def:"S"},{off:"QB",def:"LB"},{off:"WR",def:"DB"},
+    {off:"WR",def:"DB"},{off:"C",def:"LB"},{off:"RB",def:"S"},
+    {off:"QB",def:"CB"},{off:"WR",def:"DB"},{off:"WR",def:"DB"},
+    {off:"C",def:"DL"},{off:"RB",def:"S"},{off:"WR",def:"CB"},{off:"WR",def:"DB"}
+  ];
+  for (let i = 0; i < 22; i++) {
+    const num = String(i+1).padStart(3,"0");
+    state.joueurs.push({
+      num, nom: `Joueur ${i+1}`,
+      posteOff: postes[i].off, posteDef: postes[i].def,
+      forme: 8, statut: "Apte",
+      blessure: "", zone: "", dateBlessure: "", retour: ""
+    });
+  }
+  const defaultTrainings = ["2025-06-01","2025-06-08","2025-06-15","2025-06-22","2025-06-29","2025-07-06","2025-07-13","2025-07-20"];
+  defaultTrainings.forEach(d => state.trainings.push({date:d, lieu:""}));
+  const defaultMatches = [
+    {date:"2025-06-07",adversaire:"Équipe A",lieu:"Terrain A",scoreNous:21,scoreEux:14,resultat:"Victoire"},
+    {date:"2025-06-21",adversaire:"Équipe B",lieu:"Terrain B",scoreNous:7,scoreEux:28,resultat:"Défaite"},
+    {date:"2025-07-05",adversaire:"Équipe C",lieu:"Terrain C",scoreNous:14,scoreEux:14,resultat:"Nul"},
+    {date:"2025-07-19",adversaire:"Équipe D",lieu:"Terrain D",scoreNous:35,scoreEux:21,resultat:"Victoire"},
+    {date:"2025-08-02",adversaire:"Équipe E",lieu:"Terrain E",scoreNous:0,scoreEux:0,resultat:"À jouer"},
+  ];
+  defaultMatches.forEach(m => state.matches.push(m));
+  rebuildArrays();
+}
+
+function rebuildArrays() {
+  const nJ = state.joueurs.length;
+  const nT = state.trainings.length;
+  const nM = state.matches.length;
+  // Expand or create entrainements
+  if (state.entrainements.length < nJ) {
+    for (let i = state.entrainements.length; i < nJ; i++) state.entrainements.push([]);
+  }
+  for (let i = 0; i < nJ; i++) {
+    while (state.entrainements[i].length < nT) state.entrainements[i].push("✅");
+  }
+  if (state.matchsPresence.length < nJ) {
+    for (let i = state.matchsPresence.length; i < nJ; i++) state.matchsPresence.push([]);
+  }
+  for (let i = 0; i < nJ; i++) {
+    while (state.matchsPresence[i].length < nM) state.matchsPresence[i].push("✅");
+  }
+  if (state.matchsStats.length < nJ) {
+    for (let i = state.matchsStats.length; i < nJ; i++) state.matchsStats.push([]);
+  }
+  for (let i = 0; i < nJ; i++) {
+    while (state.matchsStats[i].length < nM) state.matchsStats[i].push({td:0,ints:0,yards:0});
+  }
+  if (state.video.length < nJ) {
+    for (let i = state.video.length; i < nJ; i++) state.video.push([]);
+  }
+  for (let i = 0; i < nJ; i++) {
+    while (state.video[i].length < nM) state.video[i].push({note:7,td:0,ints:0,yards:0,forts:"",faibles:""});
+  }
+  while (state.roster.length < nJ) {
+    state.roster.push(state.roster.length < 5 ? "✅ Titulaire" : state.roster.length < 10 ? "🔄 Remplaçant" : "❌ Absent");
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// KPIs & UI utils
+// ════════════════════════════════════════════════════════════
+function updateKPIs() {
+  const aptes = state.joueurs.filter(j => j.statut === "Apte").length;
+  const blesses = state.joueurs.filter(j => j.statut !== "Apte").length;
+  document.getElementById("kpi-total").textContent = state.joueurs.length;
+  document.getElementById("kpi-aptes").textContent = aptes;
+  document.getElementById("kpi-blesses").textContent = blesses;
+  document.getElementById("kpi-entr").textContent = state.trainings.length;
+  document.getElementById("kpi-matchs-count").textContent = state.matches.length;
+  document.getElementById("banner-sub").innerHTML = `Saison 2025 &nbsp;•&nbsp; Format 5 vs 5 &nbsp;•&nbsp; ${state.joueurs.length} Joueurs`;
+}
+
+function switchTab(id, el) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("panel-" + id).classList.add("active");
+  el.classList.add("active");
+  if (id === "composition") { updateCompMatchSelect(); renderRoster(); renderCompHistory(); }
+  if (id === "historique") { renderHistoriqueBlessures(); }
+  if (id === "video") { updateVideoMatchSelect(); renderVideo(); }
+}
+
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+function fmtDate(d) {
+  if (!d) return "—";
+  const parts = d.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return d;
+}
+
+// ════════════════════════════════════════════════════════════
+// JOUEURS
+// ════════════════════════════════════════════════════════════
+function renderJoueurs() {
+  const tbody = document.getElementById("tbody-joueurs");
+  tbody.innerHTML = "";
+  state.joueurs.forEach((j, i) => {
+    const sb = j.statut === "Apte" ? "badge-green" : j.statut === "En rééducation" ? "badge-orange" : "badge-red";
+    tbody.innerHTML += `<tr>
+      <td><strong style="color:var(--gold)">${j.num}</strong></td>
+      <td class="td-left"><strong>${j.nom}</strong></td>
+      <td><span class="badge badge-blue">${j.posteOff||"—"}</span></td>
+      <td><span class="badge badge-purple">${j.posteDef||"—"}</span></td>
+      <td>
+        <input type="range" min="1" max="10" value="${j.forme}" style="width:70px;vertical-align:middle"
+          onchange="state.joueurs[${i}].forme=+this.value;this.nextSibling.textContent=' '+this.value">
+        <span style="font-size:0.8rem;color:var(--gold)"> ${j.forme}</span>
+      </td>
+      <td><span class="badge ${sb}">${j.statut}</span></td>
+      <td style="font-size:0.8rem">${j.blessure||"—"}</td>
+      <td style="font-size:0.8rem">${j.zone||"—"}</td>
+      <td style="font-size:0.8rem">${fmtDate(j.dateBlessure)}</td>
+      <td style="font-size:0.8rem">${fmtDate(j.retour)}</td>
+      <td><button class="del-btn" onclick="openEditPlayerModal(${i})">✏️ Modifier</button></td>
+    </tr>`;
+  });
+  updateKPIs();
+  populatePlayerDropdowns();
+}
+
+function openAddPlayerModal() {
+  document.getElementById("modal-player-title").textContent = "Ajouter un Joueur";
+  document.getElementById("modal-player-idx").value = -1;
+  document.getElementById("mp-num").value = "";
+  document.getElementById("mp-nom").value = "";
+  document.getElementById("mp-forme").value = 8;
+  document.getElementById("mp-statut").value = "Apte";
+  document.getElementById("mp-blessure").value = "";
+  document.getElementById("mp-zone").value = "";
+  document.getElementById("mp-date-blessure").value = "";
+  document.getElementById("mp-retour").value = "";
+  document.getElementById("btn-del-player").style.display = "none";
+  clearPills();
+  openModal("modal-player");
+}
+
+function openEditPlayerModal(i) {
+  const j = state.joueurs[i];
+  document.getElementById("modal-player-title").textContent = "Modifier le Joueur";
+  document.getElementById("modal-player-idx").value = i;
+  document.getElementById("mp-num").value = j.num;
+  document.getElementById("mp-nom").value = j.nom;
+  document.getElementById("mp-forme").value = j.forme;
+  document.getElementById("mp-statut").value = j.statut;
+  document.getElementById("mp-blessure").value = j.blessure;
+  document.getElementById("mp-zone").value = j.zone;
+  document.getElementById("mp-date-blessure").value = j.dateBlessure || "";
+  document.getElementById("mp-retour").value = j.retour || "";
+  document.getElementById("btn-del-player").style.display = "inline-block";
+  clearPills();
+  // Set pills
+  document.querySelectorAll("#pills-off .poste-pill").forEach(p => {
+    if (p.dataset.val === j.posteOff) p.classList.add("selected-off");
+  });
+  document.querySelectorAll("#pills-def .poste-pill").forEach(p => {
+    if (p.dataset.val === j.posteDef) p.classList.add("selected-def");
+  });
+  openModal("modal-player");
+}
+
+function clearPills() {
+  document.querySelectorAll("#pills-off .poste-pill").forEach(p => p.classList.remove("selected-off","selected-def"));
+  document.querySelectorAll("#pills-def .poste-pill").forEach(p => p.classList.remove("selected-off","selected-def"));
+}
+
+function togglePoste(el) {
+  const side = el.dataset.side;
+  const cls = side === "off" ? "selected-off" : "selected-def";
+  const container = side === "off" ? "#pills-off" : "#pills-def";
+  // Deselect all in same side
+  document.querySelectorAll(container + " .poste-pill").forEach(p => p.classList.remove(cls));
+  el.classList.add(cls);
+}
+
+function savePlayer() {
+  const idx = +document.getElementById("modal-player-idx").value;
+  const offPill = document.querySelector("#pills-off .poste-pill.selected-off");
+  const defPill = document.querySelector("#pills-def .poste-pill.selected-def");
+  const data = {
+    num: document.getElementById("mp-num").value || "000",
+    nom: document.getElementById("mp-nom").value || "Nouveau Joueur",
+    posteOff: offPill ? offPill.dataset.val : "—",
+    posteDef: defPill ? defPill.dataset.val : "—",
+    forme: +document.getElementById("mp-forme").value || 8,
+    statut: document.getElementById("mp-statut").value,
+    blessure: document.getElementById("mp-blessure").value,
+    zone: document.getElementById("mp-zone").value,
+    dateBlessure: document.getElementById("mp-date-blessure").value,
+    retour: document.getElementById("mp-retour").value
+  };
+  if (idx === -1) {
+    state.joueurs.push(data);
+    state.entrainements.push(Array(state.trainings.length).fill("✅"));
+    state.matchsPresence.push(Array(state.matches.length).fill("✅"));
+    state.matchsStats.push(state.matches.map(() => ({td:0,ints:0,yards:0})));
+    state.video.push(state.matches.map(() => ({note:7,td:0,ints:0,yards:0,forts:"",faibles:""})));
+    state.roster.push("❌ Absent");
+  } else {
+    state.joueurs[idx] = data;
+  }
+  closeModal("modal-player");
+  renderJoueurs();
+  renderEntrainements();
+}
+
+function deletePlayer() {
+  const idx = +document.getElementById("modal-player-idx").value;
+  if (idx < 0) return;
+  if (!confirm(`Supprimer ${state.joueurs[idx].nom} ?`)) return;
+  state.joueurs.splice(idx, 1);
+  state.entrainements.splice(idx, 1);
+  state.matchsPresence.splice(idx, 1);
+  state.matchsStats.splice(idx, 1);
+  state.video.splice(idx, 1);
+  state.roster.splice(idx, 1);
+  closeModal("modal-player");
+  renderJoueurs();
+  renderEntrainements();
+}
+
+// ════════════════════════════════════════════════════════════
+// ENTRAÎNEMENTS
+// ════════════════════════════════════════════════════════════
+function renderEntrainements() {
+  const thead = document.getElementById("thead-entr");
+  const tbody = document.getElementById("tbody-entr");
+  const nT = state.trainings.length;
+  thead.innerHTML = `<tr><th>#</th><th>Joueur</th>${state.trainings.map((t,i) =>`<th style="cursor:pointer" title="Supprimer cet entraînement" onclick="deleteTraining(${i})">${fmtDate(t.date)}<br><span style="font-size:0.65rem;color:#7a90b0">${t.lieu||""}</span><br><span style="color:#f87171;font-size:0.7rem">✖</span></th>`).join("")}<th>Présences</th><th>Taux</th></tr>`;
+  tbody.innerHTML = "";
+  state.joueurs.forEach((p, i) => {
+    const pres = state.entrainements[i] || [];
+    const count = pres.filter(v => v === "✅").length;
+    const taux = nT > 0 ? Math.round(count / nT * 100) : 0;
+    let cells = pres.map((v, j) =>
+      `<td class="presence-cell" onclick="cyclePresence('entr',${i},${j})">${v}</td>`
+    ).join("");
+    tbody.innerHTML += `<tr>
+      <td><strong style="color:var(--gold)">${p.num}</strong></td>
+      <td class="td-left"><strong>${p.nom}</strong></td>
+      ${cells}
+      <td><strong style="color:var(--green)">${count}</strong></td>
+      <td><strong style="color:var(--accent)">${taux}%</strong></td>
+    </tr>`;
+  });
+}
+
+function openAddTrainingModal() {
+  document.getElementById("mt-date").value = "";
+  document.getElementById("mt-lieu").value = "";
+  openModal("modal-training");
+}
+
+function saveTraining() {
+  const d = document.getElementById("mt-date").value;
+  if (!d) { alert("Veuillez choisir une date."); return; }
+  state.trainings.push({date:d, lieu:document.getElementById("mt-lieu").value});
+  state.joueurs.forEach((_, i) => { state.entrainements[i].push("✅"); });
+  closeModal("modal-training");
+  renderEntrainements();
+  updateKPIs();
+}
+
+function deleteTraining(j) {
+  if (!confirm("Supprimer cet entraînement ?")) return;
+  state.trainings.splice(j, 1);
+  state.joueurs.forEach((_, i) => { state.entrainements[i].splice(j, 1); });
+  renderEntrainements();
+  updateKPIs();
+}
+
+// ════════════════════════════════════════════════════════════
+// MATCHS
+// ════════════════════════════════════════════════════════════
+function renderMatchs() {
+  const thead = document.getElementById("thead-matchs");
+  const tbody = document.getElementById("tbody-matchs");
+  thead.innerHTML = `<tr><th>#</th><th>Joueur</th>${state.matches.map((m,i) =>`<th style="font-size:0.7rem;cursor:pointer" onclick="openEditMatchModal(${i})">${fmtDate(m.date)}<br><span style="color:#A8C4E0">${m.adversaire||""}</span><br><span style="color:${m.resultat==='Victoire'?'#4ade80':m.resultat==='Défaite'?'#f87171':'#fb923c'};font-size:0.68rem">${m.resultat||""} ${m.scoreNous}-${m.scoreEux}</span></th>`).join("")}<th>Joués</th><th>TDs</th><th>Ints</th><th>Yards</th></tr>`;
+  tbody.innerHTML = "";
+  state.joueurs.forEach((p, i) => {
+    const pres = state.matchsPresence[i] || [];
+    const stats = state.matchsStats[i] || [];
+    const count = pres.filter(v => v === "✅").length;
+    const totTD = stats.reduce((s,m) => s+(m.td||0), 0);
+    const totInt = stats.reduce((s,m) => s+(m.ints||0), 0);
+    const totYards = stats.reduce((s,m) => s+(m.yards||0), 0);
+    let cells = pres.map((v, j) =>
+      `<td class="presence-cell" onclick="cyclePresence('match',${i},${j})">${v}</td>`
+    ).join("");
+    tbody.innerHTML += `<tr>
+      <td><strong style="color:var(--gold)">${p.num}</strong></td>
+      <td class="td-left"><strong>${p.nom}</strong></td>
+      ${cells}
+      <td><strong style="color:var(--red)">${count}</strong></td>
+      <td>${totTD}</td><td>${totInt}</td><td>${totYards}</td>
+    </tr>`;
+  });
+  updateVideoMatchSelect();
+  updateCompMatchSelect();
+}
+
+function openAddMatchModal() {
+  document.getElementById("modal-match-title").textContent = "Ajouter un Match";
+  document.getElementById("modal-match-idx").value = -1;
+  document.getElementById("mm-date").value = "";
+  document.getElementById("mm-adversaire").value = "";
+  document.getElementById("mm-lieu").value = "";
+  document.getElementById("mm-score-nous").value = 0;
+  document.getElementById("mm-score-eux").value = 0;
+  document.getElementById("mm-resultat").value = "À jouer";
+  document.getElementById("btn-del-match").style.display = "none";
+  openModal("modal-match");
+}
+
+function openEditMatchModal(i) {
+  const m = state.matches[i];
+  document.getElementById("modal-match-title").textContent = "Modifier le Match";
+  document.getElementById("modal-match-idx").value = i;
+  document.getElementById("mm-date").value = m.date || "";
+  document.getElementById("mm-adversaire").value = m.adversaire || "";
+  document.getElementById("mm-lieu").value = m.lieu || "";
+  document.getElementById("mm-score-nous").value = m.scoreNous || 0;
+  document.getElementById("mm-score-eux").value = m.scoreEux || 0;
+  document.getElementById("mm-resultat").value = m.resultat || "À jouer";
+  document.getElementById("btn-del-match").style.display = "inline-block";
+  openModal("modal-match");
+}
+
+function saveMatch() {
+  const idx = +document.getElementById("modal-match-idx").value;
+  const data = {
+    date: document.getElementById("mm-date").value,
+    adversaire: document.getElementById("mm-adversaire").value,
+    lieu: document.getElementById("mm-lieu").value,
+    scoreNous: +document.getElementById("mm-score-nous").value,
+    scoreEux: +document.getElementById("mm-score-eux").value,
+    resultat: document.getElementById("mm-resultat").value
+  };
+  if (idx === -1) {
+    state.matches.push(data);
+    state.joueurs.forEach((_, i) => {
+      state.matchsPresence[i].push("✅");
+      state.matchsStats[i].push({td:0,ints:0,yards:0});
+      state.video[i].push({note:7,td:0,ints:0,yards:0,forts:"",faibles:""});
+    });
+  } else {
+    state.matches[idx] = data;
+  }
+  closeModal("modal-match");
+  renderMatchs();
+  updateKPIs();
+}
+
+function deleteMatch() {
+  const idx = +document.getElementById("modal-match-idx").value;
+  if (!confirm("Supprimer ce match ?")) return;
+  state.matches.splice(idx, 1);
+  state.joueurs.forEach((_, i) => {
+    state.matchsPresence[i].splice(idx, 1);
+    state.matchsStats[i].splice(idx, 1);
+    state.video[i].splice(idx, 1);
+  });
+  // Remove compositions linked to this match
+  state.compositions = state.compositions.filter(c => c.matchIdx !== idx).map(c => ({
+    ...c, matchIdx: c.matchIdx > idx ? c.matchIdx - 1 : c.matchIdx
+  }));
+  closeModal("modal-match");
+  renderMatchs();
+  updateKPIs();
+}
+
+// ════════════════════════════════════════════════════════════
+// PRÉSENCE CYCLE
+// ════════════════════════════════════════════════════════════
+function cyclePresence(type, pi, ji) {
+  const arr = type === "entr" ? state.entrainements : state.matchsPresence;
+  const idx = PRESENCES.indexOf(arr[pi][ji]);
+  arr[pi][ji] = PRESENCES[(idx + 1) % PRESENCES.length];
+  type === "entr" ? renderEntrainements() : renderMatchs();
+}
+
+// ════════════════════════════════════════════════════════════
+// VIDÉO
+// ════════════════════════════════════════════════════════════
+function updateVideoMatchSelect() {
+  const sel = document.getElementById("vid-match-select");
+  const cur = sel.value;
+  sel.innerHTML = state.matches.map((m,i) => `<option value="${i}" ${+cur===i?"selected":""}>${fmtDate(m.date)} — ${m.adversaire||"Match "+(i+1)}</option>`).join("");
+}
+
+function renderVideo() {
+  const mi = +document.getElementById("vid-match-select").value || 0;
+  const tbody = document.getElementById("tbody-video");
+  tbody.innerHTML = "";
+  state.joueurs.forEach((p, i) => {
+    if (!state.video[i] || !state.video[i][mi]) return;
+    const v = state.video[i][mi];
+    tbody.innerHTML += `<tr>
+      <td class="td-left"><strong>${p.nom}</strong></td>
+      <td><span class="badge badge-blue">${p.posteOff||"—"}</span></td>
+      <td><span class="badge badge-purple">${p.posteDef||"—"}</span></td>
+      <td><input type="number" class="stat-input" min="1" max="10" value="${v.note}" onchange="state.video[${i}][${mi}].note=+this.value"></td>
+      <td><input type="number" class="stat-input" min="0" value="${v.td}" onchange="state.video[${i}][${mi}].td=+this.value"></td>
+      <td><input type="number" class="stat-input" min="0" value="${v.ints}" onchange="state.video[${i}][${mi}].ints=+this.value"></td>
+      <td><input type="number" class="stat-input" min="0" value="${v.yards}" onchange="state.video[${i}][${mi}].yards=+this.value"></td>
+      <td><input class="stat-input" style="width:120px" value="${v.forts}" placeholder="Points forts…" onchange="state.video[${i}][${mi}].forts=this.value"></td>
+      <td><input class="stat-input" style="width:120px" value="${v.faibles}" placeholder="Points faibles…" onchange="state.video[${i}][${mi}].faibles=this.value"></td>
+    </tr>`;
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// COMPOSITION
+// ════════════════════════════════════════════════════════════
+let currentCompSlots = {};
+COMP_SLOTS.forEach(s => currentCompSlots[s] = -1);
+
+function updateCompMatchSelect() {
+  const sel = document.getElementById("comp-match-select");
+  const cur = +sel.value;
+  sel.innerHTML = state.matches.map((m,i) => `<option value="${i}" ${cur===i?"selected":""}>${fmtDate(m.date)} — vs ${m.adversaire||"Match "+(i+1)}</option>`).join("");
+  if (state.matches.length > 0) loadComposition();
+}
+
+function loadComposition() {
+  const mi = +document.getElementById("comp-match-select").value;
+  const m = state.matches[mi];
+  if (m) {
+    const info = document.getElementById("comp-match-info");
+    document.getElementById("comp-info-adversaire").textContent = "vs " + (m.adversaire||"—");
+    document.getElementById("comp-info-lieu").textContent = m.lieu || "—";
+    info.style.display = "block";
+  }
+  // Load saved composition if exists
+  const saved = state.compositions.find(c => c.matchIdx === mi);
+  if (saved) {
+    currentCompSlots = {...saved.slots};
+  } else {
+    COMP_SLOTS.forEach(s => currentCompSlots[s] = -1);
+  }
+  renderTerrain();
+  renderRoster();
+}
+
+function renderTerrain() {
+  COMP_SLOTS.forEach(slot => {
+    const pi = currentCompSlots[slot];
+    const numEl = document.getElementById(`slot-${slot}-num`);
+    const nameEl = document.getElementById(`slot-${slot}-name`);
+    if (!numEl || !nameEl) return;
+    if (pi >= 0 && pi < state.joueurs.length) {
+      const j = state.joueurs[pi];
+      numEl.textContent = "#" + j.num;
+      nameEl.textContent = j.nom;
+    } else {
+      numEl.textContent = "#--";
+      nameEl.textContent = SLOT_LABELS[slot];
+    }
+  });
+}
+
+function openSlotModal(slot) {
+  document.getElementById("modal-slot-key").value = slot;
+  document.getElementById("modal-slot-title").textContent = `Assigner : ${SLOT_LABELS[slot]}`;
+  const sel = document.getElementById("ms-player");
+  sel.innerHTML = `<option value="-1">— Aucun —</option>` +
+    state.joueurs.map((j,i) => `<option value="${i}" ${currentCompSlots[slot]===i?"selected":""}>#${j.num} — ${j.nom} (OFF: ${j.posteOff} | DEF: ${j.posteDef})</option>`).join("");
+  openModal("modal-slot");
+}
+
+function saveSlot() {
+  const slot = document.getElementById("modal-slot-key").value;
+  currentCompSlots[slot] = +document.getElementById("ms-player").value;
+  closeModal("modal-slot");
+  renderTerrain();
+}
+
+function saveComposition() {
+  const mi = +document.getElementById("comp-match-select").value;
+  const existing = state.compositions.findIndex(c => c.matchIdx === mi);
+  const entry = {matchIdx: mi, slots: {...currentCompSlots}, savedAt: new Date().toISOString()};
+  if (existing >= 0) state.compositions[existing] = entry;
+  else state.compositions.push(entry);
+  renderCompHistory();
+  // Flash feedback
+  const btn = event.target;
+  btn.textContent = "✅ Sauvegardé!";
+  setTimeout(() => btn.textContent = "💾 Sauvegarder composition", 1500);
+}
+
+function renderCompHistory() {
+  const el = document.getElementById("comp-history-list");
+  if (state.compositions.length === 0) {
+    el.innerHTML = `<div style="color:#7a90b0;font-size:0.82rem;">Aucune composition sauvegardée.</div>`;
+    return;
+  }
+  el.innerHTML = state.compositions.map((c,ci) => {
+    const m = state.matches[c.matchIdx];
+    if (!m) return "";
+    const players = COMP_SLOTS.map(s => {
+      const pi = c.slots[s];
+      return pi >= 0 && state.joueurs[pi] ? state.joueurs[pi].nom : "—";
+    });
+    return `<div class="history-card" onclick="loadHistoricComposition(${ci})">
+      <div class="inj-header">
+        <div class="history-card-title">vs ${m.adversaire||"Match "+(c.matchIdx+1)} — ${fmtDate(m.date)}</div>
+        <div style="font-size:0.72rem;color:#7a90b0">Sauvé le ${new Date(c.savedAt).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <div class="history-card-sub">${m.lieu||""} &nbsp;•&nbsp; QB: ${state.joueurs[c.slots.QB]?.nom||"—"} &nbsp;•&nbsp; ${m.resultat||""}</div>
+    </div>`;
+  }).join("");
+}
+
+function loadHistoricComposition(ci) {
+  const c = state.compositions[ci];
+  // Switch match select
+  document.getElementById("comp-match-select").value = c.matchIdx;
+  currentCompSlots = {...c.slots};
+  renderTerrain();
+  loadComposition();
+}
+
+// ════════════════════════════════════════════════════════════
+// ROSTER
+// ════════════════════════════════════════════════════════════
+function renderRoster() {
+  const tbody = document.getElementById("tbody-roster");
+  tbody.innerHTML = "";
+  const SELS = ["✅ Titulaire","🔄 Remplaçant","❌ Absent","🤕 Blessé"];
+  state.joueurs.forEach((p, i) => {
+    const sel = state.roster[i] || "❌ Absent";
+    const bc = sel.includes("✅") ? "badge-green" : sel.includes("🔄") ? "badge-orange" : sel.includes("🤕") ? "badge-red" : "badge-gray";
+    tbody.innerHTML += `<tr>
+      <td><strong style="color:var(--gold)">${p.num}</strong></td>
+      <td class="td-left"><strong>${p.nom}</strong></td>
+      <td><span class="badge badge-blue">${p.posteOff||"—"}</span></td>
+      <td><span class="badge badge-purple">${p.posteDef||"—"}</span></td>
+      <td><select class="stat-input" style="width:140px" onchange="state.roster[${i}]=this.value;renderRoster()">
+        ${SELS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join("")}
+      </select></td>
+      <td><input class="stat-input" style="width:120px" placeholder="Notes…"></td>
+    </tr>`;
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// BLESSURES HISTORIQUE
+// ════════════════════════════════════════════════════════════
+function populatePlayerDropdowns() {
+  const opts = state.joueurs.map((j,i) => `<option value="${i}">#${j.num} — ${j.nom}</option>`).join("");
+  ["mi-player","inj-filter-player"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = (id === "inj-filter-player" ? `<option value="">Tous les joueurs</option>` : "") + opts;
+    el.value = cur;
+  });
+}
+
+function openAddInjuryModal() {
+  document.getElementById("modal-injury-title").textContent = "Ajouter une blessure";
+  document.getElementById("modal-injury-idx").value = -1;
+  document.getElementById("mi-player").value = 0;
+  document.getElementById("mi-type").value = "";
+  document.getElementById("mi-zone").value = "";
+  document.getElementById("mi-date-debut").value = "";
+  document.getElementById("mi-date-fin").value = "";
+  document.getElementById("mi-notes").value = "";
+  document.getElementById("mi-statut").value = "active";
+  document.getElementById("mi-gravite").value = "légère";
+  document.getElementById("btn-del-injury").style.display = "none";
+  openModal("modal-injury");
+}
+
+function openEditInjuryModal(i) {
+  const inj = state.injuries[i];
+  document.getElementById("modal-injury-title").textContent = "Modifier la blessure";
+  document.getElementById("modal-injury-idx").value = i;
+  document.getElementById("mi-player").value = inj.playerIdx;
+  document.getElementById("mi-type").value = inj.type;
+  document.getElementById("mi-zone").value = inj.zone;
+  document.getElementById("mi-date-debut").value = inj.dateDebut;
+  document.getElementById("mi-date-fin").value = inj.dateFin || "";
+  document.getElementById("mi-notes").value = inj.notes;
+  document.getElementById("mi-statut").value = inj.statut;
+  document.getElementById("mi-gravite").value = inj.gravite;
+  document.getElementById("btn-del-injury").style.display = "inline-block";
+  openModal("modal-injury");
+}
+
+function saveInjury() {
+  const idx = +document.getElementById("modal-injury-idx").value;
+  const dateDebut = document.getElementById("mi-date-debut").value;
+  const dateFin = document.getElementById("mi-date-fin").value;
+  let dureeJours = null;
+  if (dateDebut && dateFin) {
+    dureeJours = Math.round((new Date(dateFin) - new Date(dateDebut)) / 86400000);
+  }
+  const data = {
+    playerIdx: +document.getElementById("mi-player").value,
+    type: document.getElementById("mi-type").value,
+    zone: document.getElementById("mi-zone").value,
+    dateDebut, dateFin,
+    notes: document.getElementById("mi-notes").value,
+    statut: document.getElementById("mi-statut").value,
+    gravite: document.getElementById("mi-gravite").value,
+    dureeJours
+  };
+  if (idx === -1) state.injuries.push(data);
+  else state.injuries[idx] = data;
+  closeModal("modal-injury");
+  renderHistoriqueBlessures();
+}
+
+function deleteInjury() {
+  const idx = +document.getElementById("modal-injury-idx").value;
+  if (!confirm("Supprimer cette blessure ?")) return;
+  state.injuries.splice(idx, 1);
+  closeModal("modal-injury");
+  renderHistoriqueBlessures();
+}
+
+function renderHistoriqueBlessures() {
+  const filterPlayer = document.getElementById("inj-filter-player").value;
+  const filterStatus = document.getElementById("inj-filter-status").value;
+
+  let injuries = state.injuries;
+  if (filterPlayer !== "") injuries = injuries.filter(inj => inj.playerIdx === +filterPlayer);
+  if (filterStatus !== "") injuries = injuries.filter(inj => inj.statut === filterStatus);
+
+  const total = state.injuries.length;
+  const active = state.injuries.filter(i => i.statut === "active").length;
+  const resolved = state.injuries.filter(i => i.statut === "resolved").length;
+
+  // Most injured player
+  const counts = {};
+  state.injuries.forEach(inj => { counts[inj.playerIdx] = (counts[inj.playerIdx]||0)+1; });
+  let mostProne = "—";
+  let max = 0;
+  Object.entries(counts).forEach(([pi, c]) => {
+    if (c > max) { max = c; mostProne = state.joueurs[pi]?.nom || "—"; }
+  });
+
+  document.getElementById("inj-stat-total").textContent = total;
+  document.getElementById("inj-stat-active").textContent = active;
+  document.getElementById("inj-stat-resolved").textContent = resolved;
+  document.getElementById("inj-stat-prone").textContent = max > 0 ? `${mostProne} (${max})` : "—";
+
+  const el = document.getElementById("inj-list");
+  if (injuries.length === 0) {
+    el.innerHTML = `<div style="color:#7a90b0;font-size:0.85rem;padding:1rem;">Aucune blessure enregistrée.</div>`;
+    return;
+  }
+
+  const graviteColor = {légère: "#4ade80", modérée: "#fb923c", grave: "#f87171"};
+  el.innerHTML = injuries.map((inj, localIdx) => {
+    const globalIdx = state.injuries.indexOf(inj);
+    const player = state.joueurs[inj.playerIdx];
+    const playerName = player ? `#${player.num} ${player.nom}` : "—";
+    const isResolved = inj.statut === "resolved";
+    let dureeStr = "En cours";
+    if (inj.dureeJours !== null && inj.dureeJours !== undefined) dureeStr = `${inj.dureeJours} jours`;
+    else if (isResolved && inj.dateDebut && inj.dateFin) {
+      const d = Math.round((new Date(inj.dateFin) - new Date(inj.dateDebut)) / 86400000);
+      dureeStr = `${d} jours`;
+    }
+
+    // Count how many injuries this player has
+    const playerInjCount = state.injuries.filter(i => i.playerIdx === inj.playerIdx).length;
+
+    return `<div class="inj-card ${isResolved?"resolved":""}">
+      <div class="inj-header">
+        <div>
+          <div class="inj-player">${playerName}
+            ${playerInjCount > 1 ? `<span class="badge badge-red" style="margin-left:6px">⚠️ ${playerInjCount} blessures</span>` : ""}
+          </div>
+          <div class="inj-type">${inj.type||"—"} &nbsp;•&nbsp; ${inj.zone||"—"} &nbsp;•&nbsp; <span style="color:${graviteColor[inj.gravite]||'#9ca3af'};font-weight:600">${inj.gravite||"—"}</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;">
+          <span class="badge ${isResolved ? "badge-green" : "badge-red"}">${isResolved ? "✅ Résolue" : "🔴 En cours"}</span>
+          <button class="del-btn" onclick="openEditInjuryModal(${globalIdx})">✏️ Modifier</button>
+        </div>
+      </div>
+      <div class="inj-dates">
+        Début : ${fmtDate(inj.dateDebut)} ${inj.dateFin ? `&nbsp;→&nbsp; Retour : ${fmtDate(inj.dateFin)}` : ""}
+      </div>
+      <div class="inj-duration">⏱️ Durée : ${dureeStr}</div>
+      ${inj.notes ? `<div style="font-size:0.78rem;color:#A8C4E0;margin-top:0.3rem;">📝 ${inj.notes}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+// ════════════════════════════════════════════════════════════
+// EXPORT EXCEL
+// ════════════════════════════════════════════════════════════
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+  function addSheet(name, rows, cols) {
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    if (cols) ws['!cols'] = cols;
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
+
+  // Joueurs
+  addSheet("📋 Joueurs", [
+    ["GESTION ÉQUIPE FLAG FOOTBALL — Saison 2025"],[], 
+    ["#","Nom","Poste OFF","Poste DEF","Forme","Statut","Blessure","Zone","Date blessure","Retour"],
+    ...state.joueurs.map(j => [j.num,j.nom,j.posteOff,j.posteDef,j.forme,j.statut,j.blessure,j.zone,j.dateBlessure,j.retour])
+  ]);
+
+  // Entraînements
+  addSheet("🏃 Entraînements", [
+    ["PRÉSENCE AUX ENTRAÎNEMENTS"],[], 
+    ["#","Joueur",...state.trainings.map(t=>fmtDate(t.date)),"Présences","Taux"],
+    ...state.joueurs.map((p,i) => {
+      const pres = state.entrainements[i]||[];
+      const count = pres.filter(v=>v==="✅").length;
+      return [p.num,p.nom,...pres,count,state.trainings.length>0?Math.round(count/state.trainings.length*100)+"%":"0%"];
+    })
+  ]);
+
+  // Matchs
+  addSheet("🏆 Matchs", [
+    ["PRÉSENCE & STATS MATCHS"],[], 
+    ["#","Joueur",...state.matches.map(m=>fmtDate(m.date)+" vs "+m.adversaire),"Joués","TDs","Ints","Yards"],
+    ...state.joueurs.map((p,i) => {
+      const pres = state.matchsPresence[i]||[];
+      const stats = state.matchsStats[i]||[];
+      return [p.num,p.nom,...pres,
+        pres.filter(v=>v==="✅").length,
+        stats.reduce((s,m)=>s+(m.td||0),0),
+        stats.reduce((s,m)=>s+(m.ints||0),0),
+        stats.reduce((s,m)=>s+(m.yards||0),0)
+      ];
+    })
+  ]);
+
+  // Historique blessures
+  addSheet("🩹 Blessures", [
+    ["HISTORIQUE DES BLESSURES"],[], 
+    ["Joueur","Type","Zone","Gravité","Date début","Date fin","Durée (j)","Statut","Notes"],
+    ...state.injuries.map(inj => {
+      const p = state.joueurs[inj.playerIdx];
+      return [p?`${p.num} — ${p.nom}`:"—", inj.type, inj.zone, inj.gravite, inj.dateDebut, inj.dateFin, inj.dureeJours, inj.statut, inj.notes];
+    })
+  ]);
+
+  // Compositions
+  const rowsC = [["HISTORIQUE DES COMPOSITIONS"],[],
+    ["Match","Adversaire","Lieu","WR G","QB","WR D","RB","Centre","DB G","LB","DB D","Safety G","Safety D"]
+  ];
+  state.compositions.forEach(c => {
+    const m = state.matches[c.matchIdx];
+    if (!m) return;
+    rowsC.push([fmtDate(m.date),m.adversaire,m.lieu,
+      ...COMP_SLOTS.map(s => { const pi=c.slots[s]; return pi>=0&&state.joueurs[pi]?state.joueurs[pi].nom:"—"; })
+    ]);
+  });
+  addSheet("📐 Compositions", rowsC);
+
+  XLSX.writeFile(wb, "GestionEquipe_FlagFootball_2025.xlsx");
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+initDefaultPlayers();
+renderJoueurs();
+renderEntrainements();
+renderMatchs();
+renderVideo();
+renderRoster();
+updateKPIs();
+populatePlayerDropdowns();
+updateCompMatchSelect();
+renderCompHistory();
+renderHistoriqueBlessures();
+</script>
+</body>
+</html>
