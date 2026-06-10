@@ -13,12 +13,12 @@
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyCehN1Kn0JkS4yOzokIuRTCSMXxkfvk6hQ",
-    authDomain: "athleteos-a6940.firebaseapp.com",
-    projectId: "athleteos-a6940",
-    storageBucket: "athleteos-a6940.firebasestorage.app",
-    messagingSenderId: "458499434337",
-    appId: "1:458499434337:web:733e515a57e4cd5079c720"
+    apiKey: "AIzaSyDHIevjTLJI7iwr3KNPGandYcvRB_Rn-lY",
+    authDomain: "flag-30e1c.firebaseapp.com",
+    projectId: "flag-30e1c",
+    storageBucket: "flag-30e1c.firebasestorage.app",
+    messagingSenderId: "608419966876",
+    appId: "1:608419966876:web:c1e9cc0833efbba8386259"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -261,7 +261,7 @@
 </head>
 <body>
 
-<!-- Spinner de chargement Firebase -->
+<!-- Spinner Firebase -->
 <div id="fb-loading" style="display:none;position:fixed;inset:0;background:#0d1b2e;z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;">
   <div style="font-size:3rem;">🏈</div>
   <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#F39C12;letter-spacing:3px;">Flag Football Manager</div>
@@ -272,8 +272,10 @@
   <style>@keyframes fbload{from{transform:translateX(-30%)}to{transform:translateX(200%)}}</style>
 </div>
 
-<!-- Contenu principal (masqué jusqu'au chargement) -->
+<!-- App (masquée jusqu'au chargement) -->
 <div id="app-root" style="display:none;">
+
+<div class="banner">
   <div class="banner-left">
     <div class="banner-icon">🏈</div>
     <div>
@@ -669,7 +671,7 @@
 
 <script>
 // ════════════════════════════════════════════════════════════
-// PERSISTANCE Firebase (synchronisé sur tous les appareils)
+// PERSISTANCE Firebase
 // ════════════════════════════════════════════════════════════
 
 function saveState() {
@@ -678,7 +680,6 @@ function saveState() {
 
 function resetAllData() {
   if (!confirm("⚠️ Supprimer toutes les données et repartir à zéro ?")) return;
-  // Réinitialise l'état en mémoire et sauvegarde dans Firebase
   Object.assign(state, {
     joueurs: [], trainings: [], matches: [],
     entrainements: [], matchsPresence: [], matchsStats: [],
@@ -1659,7 +1660,7 @@ function exportExcel() {
 }
 
 // ════════════════════════════════════════════════════════════
-// INIT — géré par le module Firebase (voir script type="module")
+// INIT — géré par le module Firebase ci-dessus
 // ════════════════════════════════════════════════════════════
 </script>
 </div><!-- fin app-root -->
