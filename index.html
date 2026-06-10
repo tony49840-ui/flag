@@ -6,6 +6,62 @@
 <title>Flag Football Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCehN1Kn0JkS4yOzokIuRTCSMXxkfvk6hQ",
+    authDomain: "athleteos-a6940.firebaseapp.com",
+    projectId: "athleteos-a6940",
+    storageBucket: "athleteos-a6940.firebasestorage.app",
+    messagingSenderId: "458499434337",
+    appId: "1:458499434337:web:733e515a57e4cd5079c720"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const DOC_REF = doc(db, "flag_football", "team_data");
+
+  window._fbSave = async (stateObj) => {
+    try {
+      await setDoc(DOC_REF, { state: JSON.stringify(stateObj) });
+    } catch(e) { console.error("Firebase save error:", e); }
+  };
+
+  window._fbLoad = async () => {
+    try {
+      const snap = await getDoc(DOC_REF);
+      if (snap.exists()) return JSON.parse(snap.data().state);
+    } catch(e) { console.error("Firebase load error:", e); }
+    return null;
+  };
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    document.getElementById("fb-loading").style.display = "flex";
+    const saved = await window._fbLoad();
+    if (saved && saved.joueurs) {
+      Object.assign(state, saved);
+    } else {
+      initDefaultPlayers();
+    }
+    document.getElementById("fb-loading").style.display = "none";
+    document.getElementById("app-root").style.display = "block";
+    renderJoueurs();
+    renderEntrainements();
+    renderMatchs();
+    renderVideo();
+    renderRoster();
+    updateKPIs();
+    populatePlayerDropdowns();
+    updateCompMatchSelect();
+    renderCompHistory();
+    renderHistoriqueBlessures();
+  });
+</script>
+
 <style>
   :root {
     --navy: #1A2B4A; --red: #C0392B; --gold: #F39C12; --light: #EAF0FB;
@@ -205,7 +261,19 @@
 </head>
 <body>
 
-<div class="banner">
+<!-- Spinner de chargement Firebase -->
+<div id="fb-loading" style="display:none;position:fixed;inset:0;background:#0d1b2e;z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;">
+  <div style="font-size:3rem;">🏈</div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#F39C12;letter-spacing:3px;">Flag Football Manager</div>
+  <div style="color:#A8C4E0;font-size:0.85rem;">Chargement des données…</div>
+  <div style="width:160px;height:4px;background:#1e2f4a;border-radius:2px;overflow:hidden;">
+    <div style="height:100%;width:40%;background:linear-gradient(90deg,#F39C12,#e67e22);border-radius:2px;animation:fbload 1.2s ease-in-out infinite alternate;"></div>
+  </div>
+  <style>@keyframes fbload{from{transform:translateX(-30%)}to{transform:translateX(200%)}}</style>
+</div>
+
+<!-- Contenu principal (masqué jusqu'au chargement) -->
+<div id="app-root" style="display:none;">
   <div class="banner-left">
     <div class="banner-icon">🏈</div>
     <div>
@@ -601,30 +669,23 @@
 
 <script>
 // ════════════════════════════════════════════════════════════
-// PERSISTANCE localStorage
+// PERSISTANCE Firebase (synchronisé sur tous les appareils)
 // ════════════════════════════════════════════════════════════
-const STORAGE_KEY = "flagFootballManager_v1";
 
 function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch(e) { console.warn("Impossible de sauvegarder:", e); }
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-    const saved = JSON.parse(raw);
-    if (!saved || !saved.joueurs) return false;
-    Object.assign(state, saved);
-    return true;
-  } catch(e) { console.warn("Impossible de charger:", e); return false; }
+  if (window._fbSave) window._fbSave(state);
 }
 
 function resetAllData() {
   if (!confirm("⚠️ Supprimer toutes les données et repartir à zéro ?")) return;
-  localStorage.removeItem(STORAGE_KEY);
+  // Réinitialise l'état en mémoire et sauvegarde dans Firebase
+  Object.assign(state, {
+    joueurs: [], trainings: [], matches: [],
+    entrainements: [], matchsPresence: [], matchsStats: [],
+    video: [], roster: [], compositions: [], injuries: []
+  });
+  initDefaultPlayers();
+  saveState();
   location.reload();
 }
 
@@ -1598,22 +1659,9 @@ function exportExcel() {
 }
 
 // ════════════════════════════════════════════════════════════
-// INIT
+// INIT — géré par le module Firebase (voir script type="module")
 // ════════════════════════════════════════════════════════════
-const hadSavedData = loadState();
-if (!hadSavedData) {
-  initDefaultPlayers();
-}
-renderJoueurs();
-renderEntrainements();
-renderMatchs();
-renderVideo();
-renderRoster();
-updateKPIs();
-populatePlayerDropdowns();
-updateCompMatchSelect();
-renderCompHistory();
-renderHistoriqueBlessures();
 </script>
+</div><!-- fin app-root -->
 </body>
 </html>
